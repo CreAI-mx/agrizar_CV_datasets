@@ -18,3 +18,8 @@ runs/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# Per-crop runs of `make normalize-safe` and scratch runs (only the master notebook is versioned)
+normalization/normalize_*.ipynb
+!normalization/normalize_all.ipynb
+normalization/_*.ipynb

@@ -226,6 +226,7 @@ All public hydroponic growth datasets found are **lettuce**. Lettuce has no frui
 - **Source:** WUR Greenhouse Horticulture, Bleiswijk (NL), 2021. **CC BY 4.0.** The ReadMe states the lettuce was *"harvested from a hydroponic cultivation system"*.
 - **Task:** regression of crop traits from top-view RGB-D (RealSense D415, 1920×1080, RGB 8-bit + aligned 16-bit depth). 388 plants, one image pair each, 4 varieties (Salanova 102, Satine 98, Lugano 96, Aphylion 92). Traits per plant, no missing values: fresh weight 1.4–459.7 g (median 78.2), dry weight 0.1–20.1 g, height 4.3–25 cm, diameter 8.2–42 cm, leaf area 57.6–6,875 cm².
 - **Gotchas:** destructive sampling every 7 days, but **the sampling week is not in the ground truth**, and each plant appears once: no per-plant time series. Plants were photographed on a fixed imaging rig (white trays on a frame, people at the image edges), not in the growing gutters. Lighting treatments are not linked to images.
+- ⚠️ **One of the 388 plants has no RGB image in the zip** (the ground truth lists it). The normalization (`normalized/hydroponics_lettuce/`) drops it and keeps **387** (Salanova 101); it is counted in the notebook's `dropped` table.
 - **Verdict:** the best **labeled** hydroponic dataset; a reference for biomass-from-image models.
 
 ## 16. HydroGrowNet (Batavia lettuce, NFT): Mendeley `g6cm3v3wdp` v5

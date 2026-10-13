@@ -16,6 +16,8 @@ def code(text):
 md(r"""
 # Plant growth datasets (berry focus)
 
+**Purpose:** survey public growth/ripeness datasets (one section per dataset). **Inputs:** Hugging Face cache and `data/` (see CLAUDE.md). **Outputs:** `charts/growth_*.png`, `examples/growth/`, findings in `GROWTH_DATASET_FINDINGS.md`. **Run:** `make growth`. **Owner:** CreAI (GRZR-16).
+
 Companion to `plague.ipynb` (plant **disease**). This notebook looks at datasets for plant **growth**: growth stages, flowering → fruit set → ripening, leaf count and time series. The focus is **strawberry, blueberry and raspberry**, with extra sections for **tomato, sweet pepper** and **hydroponic** growth. Findings are summarized in `GROWTH_DATASET_FINDINGS.md`.
 
 | # | Dataset | Crop | Intended task | Annotation | Time series? |
@@ -45,6 +47,7 @@ code(r"""
 import io
 import json
 import re
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -55,6 +58,11 @@ import pyarrow.parquet as pq
 from huggingface_hub import HfApi, hf_hub_download, snapshot_download
 from matplotlib.patches import Patch
 from PIL import Image, ImageDraw, ImageOps
+
+sys.path.insert(0, "tools")  # shared helpers
+from cvlib.common import card_class_names, parquet_files, rf_stem
+
+stem = rf_stem  # Roboflow stem, used in the sections below
 
 CHART_DIR = Path("charts")
 CHART_DIR.mkdir(exist_ok=True)
@@ -109,26 +117,6 @@ md(r"""
 """)
 
 code(r"""
-def card_class_names(repo, column="objects"):
-    info = HfApi().dataset_info(repo).card_data["dataset_info"]
-    info = info[0] if isinstance(info, list) else info  # multi-config cards list one entry per config
-    for feature in info["features"]:
-        if feature["name"] != column:
-            continue
-        if "struct" in feature:
-            for sub in feature["struct"]:
-                if sub["name"] == "categories":
-                    names = sub["list"]["class_label"]["names"]
-        else:
-            names = feature["dtype"]["class_label"]["names"]
-        return [names[str(i)] for i in range(len(names))]
-
-
-def parquet_files(repo, folder="data"):
-    root = snapshot_download(repo, repo_type="dataset", allow_patterns=[f"{folder}/*.parquet", "README.md"])
-    return sorted(Path(root, folder).glob("*.parquet"))
-
-
 def scan_parquet(repo, columns, folder="data"):
     # One dict per image: path, width, height, mode + the requested non-image columns. Image bytes are not kept.
     rows = []
@@ -183,10 +171,6 @@ def describe_sizes(widths, heights, modes=None):
     print(f"height min / median / max: {min(heights)} / {int(np.median(heights))} / {max(heights)}")
     if modes is not None:
         print("modes:", dict(Counter(modes)))
-
-
-def stem(file_name):
-    return re.sub(r"\.rf\.[0-9a-zA-Z]+", "", file_name)
 
 
 def print_stats(stats):

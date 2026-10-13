@@ -1,0 +1,14 @@
+# Environment used for all notebooks (Python 3.12). Versions are the ones the findings were produced with.
+datasets==4.8.5
+huggingface_hub==2.2.0
+pyarrow==24.0.0
+pandas==2.3.3          # 2.3 segfaults on hex strings like "1e00..." (see CLAUDE.md): dHash values are written with a 0x prefix
+numpy==2.2.6
+matplotlib==3.10.7
+pillow==12.3.0
+nbformat==5.11.0
+nbconvert==7.17.1
+ipykernel==7.3.0
+jupyterlab
+# only for tools/prelabel_bell_pepper_seg.py (CUDA build of torch: install it from pytorch.org)
+ultralytics==8.4.19

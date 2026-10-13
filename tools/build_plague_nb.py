@@ -16,6 +16,8 @@ def code(text):
 md(r"""
 # Plant disease and pest ("plague") datasets
 
+**Purpose:** survey public disease/pest/deficiency datasets (one section per dataset). **Inputs:** Hugging Face cache and `data/` (see CLAUDE.md). **Outputs:** `charts/plague_*.png`, `examples/plague/`, findings in `PLAGUE_DATASET_FINDINGS.md`. **Run:** `make plague`. **Owner:** CreAI (GRZR-16).
+
 Datasets for detecting **plant diseases, pests and nutrient deficiencies**, both **general (all crops)** and with emphasis on **strawberry, blueberry and raspberry**. Findings are summarized in `PLAGUE_DATASET_FINDINGS.md`. The companion study on plant **growth** is `growth.ipynb` / `GROWTH_DATASET_FINDINGS.md`.
 
 | # | Dataset | Role | Task | Images | License |
