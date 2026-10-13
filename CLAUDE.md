@@ -108,3 +108,7 @@ Every number in a findings file must come from executed notebook output. After a
 - 64-bit dHash gives false near-duplicates on fixed-camera scenes (lab peppers, robot frames). Confirm a match with a larger hash before acting on it.
 - CCMT has 12 tomato images that cannot be decoded. Strawberry_12 "originals" include 147 rotated copies with black corners (dropped).
 - PlantSeg v3 has no healthy class. IP102 (AgML "CT_PestNet") is classification only, with mixed life stages and watermarked web images. CCMT has 831 byte-identical duplicates.
+
+## References
+
+- `docs/CONTEXT.md`: succinct status, vocabulary, rules and open items (GRZR-16). Read it first.
