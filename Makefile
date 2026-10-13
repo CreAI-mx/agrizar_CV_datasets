@@ -11,11 +11,12 @@ help:
 	@echo "make plague          rebuild + execute plague.ipynb       (~15 min)"
 	@echo "make normalize       master notebook, crops in sequence   (~45 min; CROPS='tomato cucumber' to pick, add 'hydroponics')"
 	@echo "make normalize-safe  one notebook per crop, one at a time (lowest RAM; outputs normalization/normalize_<crop>.ipynb)"
-	@echo "make clean-outputs   strip outputs from every notebook in place"
+	@echo "make clean-outputs   strip outputs in place from the notebooks git tracks (not your normalize-safe runs)"
 
 setup:
 	git config filter.stripnb.clean "python tools/strip_outputs.py"
 	git config filter.stripnb.smudge cat
+	git config filter.stripnb.required true
 
 growth:
 	python tools/build_growth_nb.py && $(EXEC) --ExecutePreprocessor.timeout=1800 growth.ipynb
@@ -33,4 +34,4 @@ normalize-safe:
 	done
 
 clean-outputs:
-	python tools/strip_outputs.py growth.ipynb plague.ipynb $(wildcard normalization/*.ipynb)
+	python tools/strip_outputs.py $(shell git ls-files '*.ipynb')

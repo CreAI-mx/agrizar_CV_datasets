@@ -37,11 +37,15 @@ CROP = OUT = CLASSES = RNG = None             # rebound by begin()
 def begin(crop, classes):
     """Start a crop from scratch: wipe `normalized/<crop>/` and reset all state."""
     global CROP, OUT, CLASSES, RNG
+    if not crop or not all(c.islower() or c == "_" for c in crop):  # an empty or path-like name must never reach rmtree
+        raise ValueError(f"invalid crop name {crop!r}: expected lowercase letters and underscores")
     gc.collect()
     CROP, CLASSES, OUT = crop, classes, Path("normalized") / crop
+    assert OUT.resolve().parent == Path("normalized").resolve(), OUT
     EXAMPLE_DIR.mkdir(parents=True, exist_ok=True)
     RNG = np.random.default_rng(0)
-    shutil.rmtree(OUT, ignore_errors=True)  # a run always rebuilds its crop from scratch
+    if OUT.exists():
+        shutil.rmtree(OUT)  # a run always rebuilds its crop from scratch; a failed delete must stop the run, not mix old and new files
     for sub in ("images", "labels/classification", *(f"labels/{t}/{a}" for t in ("detection", "segmentation") for a in ("condition", "maturity"))):
         (OUT / sub).mkdir(parents=True)
     for state in (IMAGES, LABEL_SPACE, DROPPED, NOTES, SERIAL, *CLASSIFICATION.values(), *CONFLICTS.values(), *SHAPES.values()):

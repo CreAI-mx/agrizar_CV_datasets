@@ -29,6 +29,7 @@ TRAITS = {"FreshWeightShoot": "fresh_weight_g", "DryWeightShoot": "dry_weight_g"
           "Diameter": "diameter_cm", "LeafArea": "leaf_area_cm2"}
 HG_NAME = re.compile(r"(\d{4}-\d{2}-\d{2})/(cam\d)=(\d{2}-\d{2}-\d{2})_segment_(\d+)\.png$")
 
+NAMES = set()            # file names already written (a repeated name would silently overwrite an image)
 ROWS = []                # manifest rows
 TRAIT_ROWS = []          # regression labels
 DROPPED = Counter()      # (source, reason) -> count
@@ -36,11 +37,22 @@ DROPPED = Counter()      # (source, reason) -> count
 
 def begin():
     """Wipe `normalized/hydroponics_lettuce/` and reset state."""
-    shutil.rmtree(OUT, ignore_errors=True)
+    if OUT.exists():
+        shutil.rmtree(OUT)
     for sub in ("images", "depth", "images_unlabeled", "labels/regression"):
         (OUT / sub).mkdir(parents=True)
     EXAMPLE_DIR.mkdir(parents=True, exist_ok=True)
-    ROWS.clear(), TRAIT_ROWS.clear(), DROPPED.clear()
+    for state in (NAMES, ROWS, TRAIT_ROWS, DROPPED):
+        state.clear()
+
+
+def claim(name, source):
+    """Reserve an output file name; a repeat is counted as dropped instead of overwriting the first file."""
+    if name in NAMES:
+        DROPPED[(source, "file name already used by another image")] += 1
+        return False
+    NAMES.add(name)
+    return True
 
 
 def build_agc_lettuce():
@@ -48,7 +60,11 @@ def build_agc_lettuce():
     zf = zipfile.ZipFile(DATA_DIR / "agc_lettuce" / "OnlineChallenge.zip")
     names = set(zf.namelist())
     gt = json.loads(zf.read("GroundTruth/GroundTruth_All_388_Images.json"))["Measurements"]
-    for key, m in sorted(gt.items(), key=lambda kv: int(re.sub(r"[^0-9]", "", kv[0]))):
+    for key, m in sorted(gt.items(), key=lambda kv: (len(kv[0]), kv[0])):  # Image2 before Image10
+        number = re.fullmatch(r"Image(\d+)", key)
+        if not number:
+            DROPPED[("agc_lettuce", "ground-truth key is not Image<n>")] += 1
+            continue
         rgb, depth = f"RGBImages/{m['RGB_Image']}", f"DepthImages/{m['Depth_Information']}"
         if rgb not in names or depth not in names:
             DROPPED[("agc_lettuce", "RGB or depth image missing from the zip")] += 1
@@ -62,9 +78,16 @@ def build_agc_lettuce():
             DROPPED[("agc_lettuce", "trait value <= 0")] += 1
             continue
         data = zf.read(rgb)
-        with Image.open(io.BytesIO(data)) as img:
-            width, height, digest = img.width, img.height, dhash(Image.open(io.BytesIO(data)))[0]
-        name = f"agc_lettuce_{int(re.sub(r'[^0-9]', '', key)):04d}.png"
+        try:
+            with Image.open(io.BytesIO(data)) as img:
+                width, height = img.size
+                digest = dhash(img)[0]
+        except OSError:
+            DROPPED[("agc_lettuce", "image file cannot be decoded")] += 1
+            continue
+        name = f"agc_lettuce_{int(number.group(1)):04d}.png"
+        if not claim(name, "agc_lettuce"):
+            continue
         (OUT / "images" / name).write_bytes(data)
         (OUT / "depth" / name).write_bytes(zf.read(depth))
         ROWS.append({"image": name, "source": "agc_lettuce", "source_ref": f"{key}:{m['RGB_Image']}", "license": "CC BY 4.0",
@@ -91,6 +114,8 @@ def build_hydrogrownet():
             DROPPED[("hydrogrownet", "image file cannot be decoded")] += 1
             continue
         name = f"hydrogrownet_{m.group(1)}_{m.group(2)}_{m.group(3)}_{m.group(4)}.png"
+        if not claim(name, "hydrogrownet"):
+            continue
         (OUT / "images_unlabeled" / name).write_bytes(data)
         ROWS.append({"image": name, "source": "hydrogrownet", "source_ref": n, "license": "CC BY 4.0", "width": width, "height": height,
                      "group": f"hydrogrownet:{m.group(1)}", "dhash": "", "role": "pretrain_only", "label_space": ""})
