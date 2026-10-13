@@ -43,7 +43,7 @@ Los datasets descartados y sus razones están en los archivos de hallazgos y en 
 
 ## Datasets normalizados por cultivo
 
-Los notebooks `normalization/normalized_<cultivo>.ipynb` (fresa, arándano, frambuesa, tomate, pimiento, pepino) mezclan las fuentes revisadas en `normalized/<cultivo>/`:
+El notebook maestro `normalization/normalize_all.ipynb` (una sección por cultivo: fresa, arándano, frambuesa, tomate, pimiento, pepino; más hidroponía) mezcla las fuentes revisadas en `normalized/<cultivo>/`. El motor compartido está en `tools/cvlib/`:
 
 ```
 normalized/<cultivo>/
@@ -73,7 +73,9 @@ Las figuras de verificación (etiquetas leídas de vuelta desde disco) están en
 | Ruta | Contenido |
 |---|---|
 | `plague.ipynb`, `growth.ipynb` | Notebooks de los estudios (generados) |
-| `normalization/` | Notebooks de normalización `normalized_<cultivo>.ipynb` (generados; hacen chdir a la raíz del repo) |
+| `normalization/` | Notebook maestro `normalize_all.ipynb` (generado; hace chdir a la raíz del repo) |
+| `tools/cvlib/` | Código compartido: motor de normalización, loaders, hidroponía |
+| `Makefile`, `requirements.txt` | Comandos del equipo y dependencias (Python 3.12) |
 | `*_DATASET_FINDINGS.md` | Reportes de hallazgos para el equipo |
 | `tools/` | Generadores de notebooks y herramientas de etiquetado |
 | `charts/`, `examples/` | Gráficas e imágenes de muestra con etiquetas dibujadas |
@@ -91,24 +93,23 @@ Las figuras de verificación (etiquetas leídas de vuelta desde disco) están en
 
 ## Regenerar los notebooks
 
-Los notebooks son **generados**: edita el generador en `tools/`, luego reconstruye y ejecuta desde la raíz del repo. Nunca edites un notebook a mano.
+Los notebooks son **generados**: edita el generador en `tools/` (o el código compartido en `tools/cvlib/`), luego reconstruye y ejecuta desde la raíz del repo. Nunca edites un notebook a mano.
 
 ```bash
-# Crecimiento (~1.5 min con caché caliente)
-python tools/build_growth_nb.py && jupyter nbconvert --to notebook --execute growth.ipynb --inplace --ExecutePreprocessor.timeout=1800
-
-# Plaga (~15 min)
-python tools/build_plague_nb.py && jupyter nbconvert --to notebook --execute plague.ipynb --inplace --ExecutePreprocessor.timeout=3600
-
-# Datasets normalizados (~45 min, en segundo plano, UN notebook a la vez)
-python tools/build_normalized_nbs.py && for c in strawberry blueberry raspberry tomato bell_pepper cucumber; do
-  jupyter nbconvert --to notebook --execute normalization/normalized_$c.ipynb --inplace --ExecutePreprocessor.timeout=7200
-done
+pip install -r requirements.txt   # una vez (Python 3.12)
+make setup                        # una vez por clon: git guarda los notebooks sin salidas
+make growth                       # crecimiento (~1.5 min con caché caliente)
+make plague                       # plaga (~15 min)
+make normalize                    # datasets normalizados + hidroponía (~45 min, en segundo plano)
+make normalize CROPS="tomato cucumber"   # solo algunos cultivos (hidroponía: `hydroponics`)
+make normalize-safe               # un notebook por cultivo, uno a la vez (menos RAM)
 ```
+
+Los notebooks no se versionan con salidas (filtro de git, `make setup`): tu copia local las conserva, pero el repositorio guarda solo el código. Los hallazgos (`*_FINDINGS.md`), `charts/` y `examples/` son el registro legible.
 
 Notas:
 
-- Ejecutar los notebooks normalizados en paralelo agota la RAM. Hazlo en secuencia.
+- Ejecutar varios kernels de normalización en paralelo agota la RAM. El notebook maestro ya corre los cultivos en secuencia.
 - Cada ejecución borra y reconstruye la carpeta de su cultivo. Si una corrida falla, `images/` queda sin etiquetas: repite ese cultivo.
 - Cada notebook normalizado termina con `check()`, que lee todos los archivos desde disco y verifica el formato.
 - Tras cualquier cambio, confirma que ninguna celda tenga salida `error` y contrasta el markdown de hallazgos con la salida del notebook. Copia el archivo de hallazgos anterior a `archive/` antes de reemplazarlo por completo.

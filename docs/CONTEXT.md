@@ -6,7 +6,7 @@
 ## Status (GRZR-16, 2026-10-13)
 - Plague datasets: 12 reviewed, 4 discarded → `PLAGUE_DATASET_FINDINGS.md`.
 - Growth datasets: 17 reviewed → `GROWTH_DATASET_FINDINGS.md`.
-- Normalized datasets: 6 crops (strawberry, blueberry, raspberry, tomato, bell pepper, cucumber), 47,837 images → `normalized/`.
+- Normalized datasets: 6 crops (strawberry, blueberry, raspberry, tomato, bell pepper, cucumber), 47,837 images → `normalized/`; hydroponic lettuce (regression layout, 387 labeled + 35,043 unlabeled images) → `normalized/hydroponics_lettuce/`.
 - Pending: trained-model surveys (plague, growth), legal review, berry data gap (see Open items).
 
 ## Domain Vocabulary
@@ -33,7 +33,7 @@
 - **Confluence** — detailed documentation and the trained-model surveys.
 
 ## Key Concepts
-- Notebooks are **generated** by `tools/build_*_nb.py`: edit the builder, rebuild, execute. Never edit a notebook by hand. Run the normalization notebooks one at a time (RAM).
+- Notebooks are **generated** by `tools/build_*_nb.py`: edit the builder, rebuild, execute. Never edit a notebook by hand. Shared code is in `tools/cvlib/`; commands are in the `Makefile` (`make setup` once: notebooks are stored without outputs). One master notebook (`normalization/normalize_all.ipynb`) runs the crops in sequence (RAM).
 - One study = notebook + findings md + `charts/` + `examples/`. Draw labels on samples and look at them (this is how most label bugs were found).
 - `normalized/<crop>/` = `images/`, `labels/{classification,detection,segmentation}/`, `manifest.csv`. Excluded on purpose: chili, LeafNet2.0, AgML strawberry/avocado, Imtiaz tomato, broken raspberry point labels.
 - Top traps (details in `CLAUDE.md`): AgML class names (use the card); Roboflow augmented copies; LeafNet2.0 ⊃ PlantVillage, PlantWild ⊃ PlantSeg; missing class names (Strawberry_12, PlantDoc); Laboro EXIF-rotated boxes; pandas 2.3 segfault on `1e00…` hashes.
